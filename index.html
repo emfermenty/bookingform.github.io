@@ -4,48 +4,177 @@
   <meta charset="UTF-8">
   <title>Запись на услугу</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    label { display: block; margin-top: 10px; }
-    input, select { margin-top: 5px; width: 250px; padding: 5px; }
-    button { margin-top: 20px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: #f7f9fc;
+      margin: 0;
+      padding: 15px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      max-width: 480px;
+      margin: auto;
+    }
+
+    h2 {
+      text-align: center;
+      font-size: 20px;
+      margin-bottom: 20px;
+      color: #222;
+    }
+
+    label {
+      display: block;
+      font-weight: 500;
+      margin: 15px 0 5px;
+      color: #333;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+      box-sizing: border-box;
+      transition: 0.2s;
+    }
+    input:focus, select:focus {
+      border-color: #4a90e2;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(74,144,226,0.2);
+    }
+
+    /* чекбоксы/радио в одну строку с полем */
+    .input-with-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .input-with-checkbox input[type="text"] {
+      flex: 1;
+      min-width: 0;
+    }
+    .input-with-checkbox label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0;
+      font-size: 14px;
+      color: #555;
+      white-space: nowrap;
+    }
+
+    .input-with-checkbox input[type="checkbox"] {
+      margin: 0;
+      flex-shrink: 0;
+      width: 20%;
+    }
+
+    /* для радиокнопок да/нет */
+    .radio-group {
+      display: flex;
+      gap: 40px;
+      margin-top: 8px;
+    }
+    .radio-group label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0;
+      font-size: 15px;
+      color: #444;
+    }
+
+    .radio-group input[type="radio"] {
+      margin: 0;
+      flex-shrink: 0;
+    width: 50%;
+  }
+
+    button {
+      width: 100%;
+      background: #4a90e2;
+      color: #fff;
+      border: none;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #357ab7;
+    }
+
+    #status {
+      margin-top: 15px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 500;
+      color: #4caf50;
+    }
   </style>
+
+
 </head>
 <body>
-  <h2>Запись на услугу</h2>
+  <div class="card">
+    <h2>📌 Запись на услугу</h2>
 
-  <!-- Выбор процедуры -->
-  <label>Выберите процедуру:</label>
-  <select id="service"></select>
+    <label>Выберите процедуру:</label>
+    <select id="service"></select>
 
-  <!-- Выбор слота -->
-  <label>Выберите время:</label>
-  <select id="slot"></select>
+    <label>Выберите время:</label>
+    <select id="slot"></select>
 
-  <!-- Процедуры ранее -->
-  <label>Какие процедуры делали ранее?:</label>
-  <input type="text" id="previous-procedures" placeholder="Например: пилинг, массаж">
-  <label><input type="checkbox" id="none-procedures"> Не делал</label>
+    <label>Какие процедуры делали ранее?</label>
+    <div class="input-with-checkbox">
+      <input type="text" id="previous-procedures" placeholder="Например: пилинг, массаж">
+      <label><input type="checkbox" id="none-procedures"> Не делал</label>
+    </div>
 
-  <!-- Средства дома -->
-  <label>Какими средствами пользуетесь дома:</label>
-  <input type="text" id="means-recommendations" placeholder="Например: крем, сыворотка">
-  <label><input type="checkbox" id="none-means"> Не пользуюсь</label>
+    <label>Какими средствами пользуетесь дома:</label>
+    <div class="input-with-checkbox">
+      <input type="text" id="means-recommendations" placeholder="Например: крем, сыворотка">
+      <label><input type="checkbox" id="none-means"> Не пользуюсь</label>
+    </div>
 
-  <!-- Ранее пользовались услугами косметолога -->
-  <label>Ранее пользовались услугами косметолога:</label>
-  <div id="used-before">
-    <label><input type="radio" name="usedBefore" value="Да"> Да</label>
-    <label><input type="radio" name="usedBefore" value="Нет"> Нет</label>
+    <label>Ранее пользовались услугами косметолога:</label>
+    <div class="radio-group" id="used-before">
+      <label><input type="radio" name="usedBefore" value="Да"> Да</label>
+      <label><input type="radio" name="usedBefore" value="Нет"> Нет</label>
+    </div>
+
+    <button id="submit">Записаться</button>
+    <div id="status"></div>
   </div>
 
-  <button id="submit">Записаться</button>
-
   <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
+    let tg = null;
+    let isTelegram = false;
 
-    // Блокировка полей при галочке "Не делал / Не пользуюсь"
+    if (window.Telegram && window.Telegram.WebApp) {
+      tg = window.Telegram.WebApp;
+      tg.expand();
+      tg.ready();
+      isTelegram = true;
+      console.log("✅ WebApp инициализирован в Telegram");
+      document.getElementById('status').textContent = 'Подключено к Telegram';
+    } else {
+      console.log("⚠️ WebApp открыт вне Telegram");
+      document.getElementById('status').textContent = 'Режим тестирования (вне Telegram)';
+    }
+
     function setupBlockCheckbox(inputId, checkboxId) {
       const input = document.getElementById(inputId);
       const checkbox = document.getElementById(checkboxId);
@@ -62,7 +191,7 @@
       return checked ? checked.value : null;
     }
 
-    // ==== Загружаем тестовые данные ====
+    // тестовые данные
     const services = [
       { id: 1, title: "Ботекс" },
       { id: 2, title: "Чистка лица" }
@@ -92,7 +221,6 @@
       slotSelect.appendChild(opt);
     });
 
-    // ==== Отправка данных в бот ====
     document.getElementById("submit").addEventListener("click", () => {
       const data = {
         service_id: serviceSelect.value,
@@ -102,9 +230,25 @@
         used_before: getRadioValue("usedBefore")
       };
 
-      console.log("Отправляем данные:", data);
-      tg.sendData(JSON.stringify(data));
-      tg.close();
+      console.log("📤 Отправляем данные:", data);
+      document.getElementById('status').textContent = 'Отправка данных...';
+
+      if (isTelegram && tg && tg.sendData) {
+        try {
+          tg.sendData(JSON.stringify(data));
+          document.getElementById('status').textContent = 'Данные отправлены! Закрытие...';
+          setTimeout(() => {
+            tg.close();
+          }, 1000);
+        } catch (error) {
+          console.error("❌ Ошибка отправки:", error);
+          document.getElementById('status').textContent = 'Ошибка отправки: ' + error.message;
+        }
+      } else {
+        console.log("📋 Тестовые данные:", data);
+        document.getElementById('status').textContent = 'Тестовые данные: ' + JSON.stringify(data);
+        alert("Данные (тест режим): " + JSON.stringify(data));
+      }
     });
   </script>
 </body>
