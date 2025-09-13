@@ -9,7 +9,8 @@
     body { font-family: sans-serif; background: #f7f9fc; padding: 15px; }
     .card { background: #fff; border-radius: 16px; padding: 20px; max-width: 480px; margin: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.08);}
     label { display: block; margin: 15px 0 5px; }
-    select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ccc; box-sizing: border-box; }
+    select, textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ccc; box-sizing: border-box; }
+    textarea { resize: vertical; }
     button { width: 100%; background: #4a90e2; color: #fff; border: none; padding: 14px; border-radius: 12px; margin-top: 20px; font-size: 16px; cursor: pointer;}
     button:hover { background: #357ab7; }
     #status { margin-top: 15px; text-align: center; font-size: 14px; color: #4caf50;}
@@ -24,6 +25,9 @@
 
     <label>Выберите время:</label>
     <select id="slot"></select>
+
+    <label>Комментарий к записи (по желанию):</label>
+    <textarea id="comment" rows="3" placeholder="Напишите комментарий..."></textarea>
 
     <button id="submit">Записаться</button>
     <div id="status"></div>
@@ -60,9 +64,17 @@
     });
 
     document.getElementById("submit").addEventListener("click", () => {
+      const comment = document.getElementById("comment").value.trim();
+
+      if (!serviceSelect.value || !slotSelect.value) {
+        tg.showAlert("Выберите услугу и слот!");
+        return;
+      }
+
       const data = {
         service_id: serviceSelect.value,
-        slot_id: slotSelect.value
+        slot_id: slotSelect.value,
+        comment: comment
       };
 
       tg.sendData(JSON.stringify(data));
