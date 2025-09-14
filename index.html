@@ -167,6 +167,8 @@
         // Обработка полученных данных от бота
         tg.onEvent('webAppDataReceived', (event) => {
             try {
+                console.log('Received data:', event.data);
+                
                 const data = JSON.parse(event.data);
                 
                 if (data.services && Array.isArray(data.services)) {
@@ -234,14 +236,46 @@
             }
         });
 
-        // Обработка ошибок
-        tg.onEvent('webAppRequestedViewportChanged', (event) => {
-            console.log('Viewport changed:', event);
+        // Альтернативный способ: обработка через основное событие
+        tg.onEvent('message', (message) => {
+            try {
+                if (message && typeof message === 'string') {
+                    const data = JSON.parse(message);
+                    processReceivedData(data);
+                }
+            } catch (error) {
+                console.log('Not a JSON message:', message);
+            }
         });
 
-        tg.onEvent('webAppSetupFailed', (event) => {
-            showError('Ошибка инициализации WebApp');
-        });
+        function processReceivedData(data) {
+            if (data.services && Array.isArray(data.services)) {
+                serviceSelect.innerHTML = '<option value="">Выберите услугу</option>';
+                data.services.forEach(service => {
+                    const option = document.createElement('option');
+                    option.value = service.id;
+                    option.textContent = service.title;
+                    serviceSelect.appendChild(option);
+                });
+            }
+
+            if (data.slots && Array.isArray(data.slots)) {
+                slotSelect.innerHTML = '<option value="">Выберите время</option>';
+                data.slots.sort((a, b) => new Date(a.slot_datetime) - new Date(b.slot_datetime));
+                
+                data.slots.forEach(slot => {
+                    const option = document.createElement('option');
+                    option.value = slot.id;
+                    const date = new Date(slot.slot_datetime);
+                    option.textContent = date.toLocaleString('ru-RU');
+                    slotSelect.appendChild(option);
+                });
+            }
+
+            submitButton.disabled = false;
+            showStatus('✅ Данные загружены', 'success');
+            setTimeout(() => showStatus(''), 2000);
+        }
 
         // Проверка заполнения формы
         function validateForm() {
@@ -277,7 +311,7 @@
             // Отправляем данные бронирования
             tg.sendData(JSON.stringify(bookingData));
             
-            // Закрываем WebApp через 2 секунды (бот обработает данные и ответит пользователю)
+            // Закрываем WebApp через 2 секунды
             setTimeout(() => {
                 tg.close();
             }, 2000);
@@ -286,11 +320,6 @@
         // Начинаем загрузку данных при открытии
         document.addEventListener('DOMContentLoaded', () => {
             loadData();
-        });
-
-        // Обработка закрытия WebApp
-        tg.onEvent('viewportChanged', (event) => {
-            console.log('Viewport changed:', event);
         });
     </script>
 </body>
