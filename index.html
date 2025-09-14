@@ -33,54 +33,67 @@
     <div id="status"></div>
   </div>
 
-  <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
+<script>
+  const tg = window.Telegram.WebApp;
+  tg.expand();
 
-    // Здесь нужно подставлять реальные услуги и слоты из бэка
-    const services = [
-      { id: 1, title: "Ботекс" },
-      { id: 2, title: "Чистка лица" }
-    ];
-    const slots = [
-      { id: 4, slot_datetime: "2025-09-10T12:00:00" },
-      { id: 5, slot_datetime: "2025-09-10T13:00:00" }
-    ];
+  const serviceSelect = document.getElementById("service");
+  const slotSelect = document.getElementById("slot");
+  const statusDiv = document.getElementById("status");
 
-    const serviceSelect = document.getElementById("service");
-    services.forEach(s => {
-      const opt = document.createElement("option");
-      opt.value = s.id;
-      opt.textContent = s.title;
-      serviceSelect.appendChild(opt);
-    });
+  async function loadData() {
+    try {
+      const [servicesRes, slotsRes] = await Promise.all([
+        fetch("http://46.149.66.175:8000/api/services"),
+        fetch("http://46.149.66.175:8000/api/slots")
+      ]);
 
-    const slotSelect = document.getElementById("slot");
-    slots.forEach(s => {
-      const opt = document.createElement("option");
-      opt.value = s.id;
-      opt.textContent = new Date(s.slot_datetime).toLocaleString("ru-RU");
-      slotSelect.appendChild(opt);
-    });
+      const services = await servicesRes.json();
+      let slots = await slotsRes.json();
 
-    document.getElementById("submit").addEventListener("click", () => {
-      const comment = document.getElementById("comment").value.trim();
+      // --- Сортировка слотов по дате ---
+      slots.sort((a, b) => new Date(a.slot_datetime) - new Date(b.slot_datetime));
 
-      if (!serviceSelect.value || !slotSelect.value) {
-        tg.showAlert("Выберите услугу и слот!");
-        return;
-      }
+      // Заполняем select услугами
+      services.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.id;
+        opt.textContent = s.title;
+        serviceSelect.appendChild(opt);
+      });
 
-      const data = {
-        service_id: serviceSelect.value,
-        slot_id: slotSelect.value,
-        comment: comment
-      };
+      // Заполняем select слотами
+      slots.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.id;
+        opt.textContent = new Date(s.slot_datetime).toLocaleString("ru-RU");
+        slotSelect.appendChild(opt);
+      });
 
-      tg.sendData(JSON.stringify(data));
-      document.getElementById('status').textContent = 'Данные отправлены! Закрытие...';
-      setTimeout(() => tg.close(), 1000);
-    });
-  </script>
-</body>
-</html>
+    } catch (err) {
+      console.error("Ошибка при загрузке данных:", err);
+      statusDiv.textContent = "Ошибка загрузки данных с сервера.";
+    }
+  }
+
+  loadData();
+
+  document.getElementById("submit").addEventListener("click", async () => {
+    const comment = document.getElementById("comment").value.trim();
+
+    if (!serviceSelect.value || !slotSelect.value) {
+      tg.showAlert("Выберите услугу и слот!");
+      return;
+    }
+
+    const data = {
+      service_id: parseInt(serviceSelect.value),
+      slot_datetime: slotSelect.options[slotSelect.selectedIndex].text,
+      comment: comment
+    };
+
+    tg.sendData(JSON.stringify(data));
+    statusDiv.textContent = 'Данные отправлены! Закрытие...';
+    setTimeout(() => tg.close(), 1000);
+  });
+</script>
