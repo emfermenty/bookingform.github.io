@@ -81,14 +81,14 @@
         <div class="form-group">
             <label for="service">Услуга:</label>
             <select id="service">
-                <option value="">Загрузка...</option>
+                <option value="">Загрузка услуг...</option>
             </select>
         </div>
 
         <div class="form-group">
             <label for="slot">Время:</label>
             <select id="slot">
-                <option value="">Загрузка...</option>
+                <option value="">Загрузка времени...</option>
             </select>
         </div>
 
@@ -130,20 +130,10 @@
             });
         }
 
-        // Запрашиваем данные у бота
-        function requestData() {
-            showStatus('Загрузка данных...', 'loading');
-            
-            // Отправляем запрос боту
-            tg.sendData(JSON.stringify({
-                action: "get_data"
-            }));
-        }
-
         // Обработчик получения данных от бота
         tg.onEvent('webAppDataReceived', (event) => {
             try {
-                console.log('Received data from bot:', event.data);
+                console.log('Получены данные от бота:', event.data);
                 
                 const data = JSON.parse(event.data);
                 
@@ -180,12 +170,12 @@
                     });
                 }
 
-                showStatus('Данные загружены', 'success');
+                showStatus('Данные загружены ✅', 'success');
                 setTimeout(() => showStatus(''), 2000);
                 updateSubmitButton();
 
             } catch (error) {
-                console.error('Error parsing data:', error);
+                console.error('Ошибка парсинга данных:', error);
                 showError('Ошибка загрузки данных');
             }
         });
@@ -201,6 +191,11 @@
 
         // Отправка формы
         submitBtn.addEventListener('click', () => {
+            if (!serviceSelect.value || !slotSelect.value) {
+                showError('Выберите услугу и время');
+                return;
+            }
+
             const bookingData = {
                 action: "book",
                 service_id: parseInt(serviceSelect.value),
@@ -208,19 +203,31 @@
                 comment: commentTextarea.value.trim()
             };
 
-            showStatus('Отправка...', 'loading');
+            showStatus('Отправка данных...', 'loading');
             
             // Отправляем данные боту
             tg.sendData(JSON.stringify(bookingData));
             
             // Закрываем WebApp
-            setTimeout(() => tg.close(), 1000);
+            setTimeout(() => tg.close(), 1500);
         });
 
-        // Запускаем загрузку данных при открытии
+        // Запрашиваем данные у бота при загрузке
         document.addEventListener('DOMContentLoaded', () => {
-            requestData();
+            showStatus('Запрашиваем данные у бота...', 'loading');
+            
+            // Отправляем запрос боту
+            tg.sendData(JSON.stringify({
+                action: "get_data"
+            }));
         });
+
+        // Обработчик ошибок
+        tg.onEvent('webAppSetupFailed', (event) => {
+            console.error('WebApp setup failed:', event);
+            showError('Ошибка инициализации WebApp');
+        });
+
     </script>
 </body>
 </html>
