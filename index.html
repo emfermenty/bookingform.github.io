@@ -41,11 +41,27 @@
             border-radius: 8px;
             font-size: 14px;
         }
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
         #status {
             text-align: center;
             margin-top: 15px;
             padding: 10px;
             border-radius: 5px;
+            font-size: 14px;
         }
         .loading {
             background: #e3f2fd;
@@ -67,14 +83,14 @@
         
         <div class="form-group">
             <label for="service">Услуга:</label>
-            <select id="service">
+            <select id="service" disabled>
                 <option value="">Загрузка услуг...</option>
             </select>
         </div>
 
         <div class="form-group">
             <label for="slot">Время:</label>
-            <select id="slot">
+            <select id="slot" disabled>
                 <option value="">Загрузка времени...</option>
             </select>
         </div>
@@ -83,8 +99,10 @@
             <label for="comment">Комментарий:</label>
             <textarea id="comment" rows="3" placeholder="Ваши пожелания..."></textarea>
         </div>
+
+        <button id="submitBtn" disabled>📨 Отправить запись</button>
         
-        <div id="status">Нажмите кнопку "Отправить" внизу</div>
+        <div id="status">🔄 Загружаем данные...</div>
     </div>
 
     <script>
@@ -96,13 +114,9 @@
         
         const serviceSelect = document.getElementById('service');
         const slotSelect = document.getElementById('slot');
+        const submitBtn = document.getElementById('submitBtn');
         const statusDiv = document.getElementById('status');
         const commentTextarea = document.getElementById('comment');
-
-        // Настраиваем Main Button
-        tg.MainButton.setText("Отправить");
-        tg.MainButton.hide();
-        tg.MainButton.enable();
 
         // Функции для отображения статуса
         function showStatus(message, type = '') {
@@ -120,7 +134,7 @@
         }
 
         // Обработчик получения данных от бота
-        tg.onEvent('webAppDataReceived', (event) => {
+        function handleBotResponse(event) {
             try {
                 console.log('Получены данные от бота:', event.data);
                 
@@ -135,6 +149,7 @@
                         option.textContent = service.title;
                         serviceSelect.appendChild(option);
                     });
+                    serviceSelect.disabled = false;
                 }
 
                 // Заполняем время
@@ -157,35 +172,47 @@
                         });
                         slotSelect.appendChild(option);
                     });
+                    slotSelect.disabled = false;
                 }
 
-                showStatus('Данные загружены ✅ Выберите услугу и время', 'success');
+                showStatus('✅ Данные загружены! Выберите услугу и время', 'success');
+                updateSubmitButton();
 
             } catch (error) {
-                console.error('Ошибка парсинга данных:', error);
-                showError('Ошибка загрузки данных');
+                console.error('Ошибка парсинга данных:', error, event.data);
+                showError('Ошибка загрузки данных от бота');
+            }
+        }
+
+        // Слушаем сообщения от бота
+        tg.onEvent('webAppDataReceived', handleBotResponse);
+
+        // Также слушаем входящие сообщения (на всякий случай)
+        tg.onEvent('message', (message) => {
+            try {
+                if (typeof message === 'string') {
+                    const data = JSON.parse(message);
+                    handleBotResponse({ data: message });
+                }
+            } catch (e) {
+                // Не JSON сообщение, игнорируем
             }
         });
 
         // Проверяем, заполнена ли форма
-        function checkForm() {
+        function updateSubmitButton() {
             const isFormValid = serviceSelect.value && slotSelect.value;
-            if (isFormValid) {
-                tg.MainButton.show();
-            } else {
-                tg.MainButton.hide();
-            }
-            return isFormValid;
+            submitBtn.disabled = !isFormValid;
         }
 
-        // Слушаем изменения select'ов
-        serviceSelect.addEventListener('change', checkForm);
-        slotSelect.addEventListener('change', checkForm);
+        // Слушаем изменения в форме
+        serviceSelect.addEventListener('change', updateSubmitButton);
+        slotSelect.addEventListener('change', updateSubmitButton);
 
-        // Обработчик Main Button
-        tg.MainButton.onClick(() => {
-            if (!checkForm()) {
-                showError('Выберите услугу и время');
+        // Отправка формы
+        submitBtn.addEventListener('click', () => {
+            if (!serviceSelect.value || !slotSelect.value) {
+                showError('Пожалуйста, выберите услугу и время');
                 return;
             }
 
@@ -196,20 +223,33 @@
                 comment: commentTextarea.value.trim()
             };
 
-            showStatus('Отправка данных...', 'loading');
+            showStatus('📨 Отправляем данные...', 'loading');
+            submitBtn.disabled = true;
             
             // Отправляем данные боту
             tg.sendData(JSON.stringify(bookingData));
+            
+            // Закрываем WebApp через секунду
+            setTimeout(() => {
+                tg.close();
+            }, 1000);
         });
 
         // Запрашиваем данные у бота при загрузке
         document.addEventListener('DOMContentLoaded', () => {
-            showStatus('Запрашиваем данные у бота...', 'loading');
+            showStatus('🔄 Запрашиваем данные у бота...', 'loading');
             
             // Отправляем запрос боту
             tg.sendData(JSON.stringify({
                 action: "get_data"
             }));
+            
+            // На всякий случай, если данные не придут, покажем ошибку через 5 секунд
+            setTimeout(() => {
+                if (serviceSelect.disabled) {
+                    showError('Не удалось загрузить данные. Попробуйте снова.');
+                }
+            }, 5000);
         });
 
     </script>
