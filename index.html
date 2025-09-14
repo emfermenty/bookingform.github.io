@@ -41,19 +41,6 @@
             border-radius: 8px;
             font-size: 14px;
         }
-        button {
-            width: 100%;
-            padding: 15px;
-            background: #4a90e2;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        button:disabled {
-            background: #ccc;
-        }
         #status {
             text-align: center;
             margin-top: 15px;
@@ -96,10 +83,8 @@
             <label for="comment">Комментарий:</label>
             <textarea id="comment" rows="3" placeholder="Ваши пожелания..."></textarea>
         </div>
-
-        <button id="submitBtn" disabled>Записаться</button>
         
-        <div id="status"></div>
+        <div id="status">Нажмите кнопку "Отправить" внизу</div>
     </div>
 
     <script>
@@ -111,9 +96,13 @@
         
         const serviceSelect = document.getElementById('service');
         const slotSelect = document.getElementById('slot');
-        const submitBtn = document.getElementById('submitBtn');
         const statusDiv = document.getElementById('status');
         const commentTextarea = document.getElementById('comment');
+
+        // Настраиваем Main Button
+        tg.MainButton.setText("Отправить");
+        tg.MainButton.hide();
+        tg.MainButton.enable();
 
         // Функции для отображения статуса
         function showStatus(message, type = '') {
@@ -170,9 +159,7 @@
                     });
                 }
 
-                showStatus('Данные загружены ✅', 'success');
-                setTimeout(() => showStatus(''), 2000);
-                updateSubmitButton();
+                showStatus('Данные загружены ✅ Выберите услугу и время', 'success');
 
             } catch (error) {
                 console.error('Ошибка парсинга данных:', error);
@@ -180,18 +167,24 @@
             }
         });
 
-        // Обновление кнопки отправки
-        function updateSubmitButton() {
-            submitBtn.disabled = !(serviceSelect.value && slotSelect.value);
+        // Проверяем, заполнена ли форма
+        function checkForm() {
+            const isFormValid = serviceSelect.value && slotSelect.value;
+            if (isFormValid) {
+                tg.MainButton.show();
+            } else {
+                tg.MainButton.hide();
+            }
+            return isFormValid;
         }
 
         // Слушаем изменения select'ов
-        serviceSelect.addEventListener('change', updateSubmitButton);
-        slotSelect.addEventListener('change', updateSubmitButton);
+        serviceSelect.addEventListener('change', checkForm);
+        slotSelect.addEventListener('change', checkForm);
 
-        // Отправка формы
-        submitBtn.addEventListener('click', () => {
-            if (!serviceSelect.value || !slotSelect.value) {
+        // Обработчик Main Button
+        tg.MainButton.onClick(() => {
+            if (!checkForm()) {
                 showError('Выберите услугу и время');
                 return;
             }
@@ -207,9 +200,6 @@
             
             // Отправляем данные боту
             tg.sendData(JSON.stringify(bookingData));
-            
-            // Закрываем WebApp
-            setTimeout(() => tg.close(), 1500);
         });
 
         // Запрашиваем данные у бота при загрузке
@@ -220,12 +210,6 @@
             tg.sendData(JSON.stringify({
                 action: "get_data"
             }));
-        });
-
-        // Обработчик ошибок
-        tg.onEvent('webAppSetupFailed', (event) => {
-            console.error('WebApp setup failed:', event);
-            showError('Ошибка инициализации WebApp');
         });
 
     </script>
