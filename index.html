@@ -1,91 +1,297 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Запись на услугу</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { font-family: sans-serif; background: #f7f9fc; padding: 15px; }
-    .card { background: #fff; border-radius: 16px; padding: 20px; max-width: 480px; margin: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.08);}
-    label { display: block; margin: 15px 0 5px; }
-    select, textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ccc; box-sizing: border-box; }
-    textarea { resize: vertical; }
-    button { width: 100%; background: #4a90e2; color: #fff; border: none; padding: 14px; border-radius: 12px; margin-top: 20px; font-size: 16px; cursor: pointer;}
-    button:hover { background: #357ab7; }
-    #status { margin-top: 15px; text-align: center; font-size: 14px; color: #4caf50;}
-  </style>
+    <meta charset="UTF-8">
+    <title>Запись на услугу</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f7f9fc;
+            padding: 15px;
+            margin: 0;
+        }
+        .card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px;
+            max-width: 480px;
+            margin: auto;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        label {
+            display: block;
+            margin: 15px 0 5px;
+            font-weight: 500;
+            color: #555;
+        }
+        select, textarea {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+            font-size: 14px;
+            background: #fff;
+        }
+        select:focus, textarea:focus {
+            outline: none;
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+        }
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        button {
+            width: 100%;
+            background: #4a90e2;
+            color: #fff;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            margin-top: 20px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background: #357ab7;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        #status {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 14px;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .success {
+            color: #4caf50;
+            background: #f0fff4;
+        }
+        .error {
+            color: #f44336;
+            background: #fff0f0;
+        }
+        .loading {
+            color: #2196f3;
+            background: #f0f8ff;
+        }
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4a90e2;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
-  <div class="card">
-    <h2>📌 Запись на услугу</h2>
+    <div class="card">
+        <h2>📌 Запись на услугу</h2>
+        
+        <label>Выберите процедуру:</label>
+        <select id="service">
+            <option value="">Загрузка услуг...</option>
+        </select>
 
-    <label>Выберите процедуру:</label>
-    <select id="service"></select>
+        <label>Выберите время:</label>
+        <select id="slot">
+            <option value="">Загрузка времени...</option>
+        </select>
 
-    <label>Выберите время:</label>
-    <select id="slot"></select>
+        <label>Комментарий к записи (по желанию):</label>
+        <textarea id="comment" rows="3" placeholder="Напишите комментарий..."></textarea>
 
-    <label>Комментарий к записи (по желанию):</label>
-    <textarea id="comment" rows="3" placeholder="Напишите комментарий..."></textarea>
+        <button id="submit" disabled>Записаться</button>
+        
+        <div id="status"></div>
+    </div>
 
-    <button id="submit">Записаться</button>
-    <div id="status"></div>
-  </div>
+    <script>
+        const tg = window.Telegram.WebApp;
+        
+        // Инициализация WebApp
+        tg.expand();
+        tg.enableClosingConfirmation();
+        
+        const serviceSelect = document.getElementById("service");
+        const slotSelect = document.getElementById("slot");
+        const submitButton = document.getElementById("submit");
+        const statusDiv = document.getElementById("status");
+        const commentTextarea = document.getElementById("comment");
 
-<script>
-  const tg = window.Telegram.WebApp;
-  tg.expand();
+        // Показываем статус загрузки
+        function showStatus(message, type = '') {
+            statusDiv.textContent = message;
+            statusDiv.className = type;
+        }
 
-  const serviceSelect = document.getElementById("service");
-  const slotSelect = document.getElementById("slot");
-  const statusDiv = document.getElementById("status");
+        // Показываем ошибку
+        function showError(message) {
+            showStatus(message, 'error');
+            tg.showPopup({
+                title: 'Ошибка',
+                message: message,
+                buttons: [{ type: 'ok' }]
+            });
+        }
 
-  // ⚡ Запрос данных у бота
-  tg.sendData(JSON.stringify({ action: "get_data" }));
+        // Загрузка данных
+        function loadData() {
+            showStatus('🔄 Загрузка данных...', 'loading');
+            
+            // Отправляем запрос на получение данных
+            tg.sendData(JSON.stringify({ 
+                action: "get_data" 
+            }));
+        }
 
-  // 📌 Получаем ответ от бота через событие web_app_data
-  tg.onEvent("web_app_data", (event) => {
-    const response = JSON.parse(event.data);
+        // Обработка полученных данных от бота
+        tg.onEvent('webAppDataReceived', (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                
+                if (data.services && Array.isArray(data.services)) {
+                    // Заполняем список услуг
+                    serviceSelect.innerHTML = '<option value="">Выберите услугу</option>';
+                    data.services.forEach(service => {
+                        const option = document.createElement('option');
+                        option.value = service.id;
+                        option.textContent = service.title;
+                        serviceSelect.appendChild(option);
+                    });
+                }
 
-    if (response.services) {
-      response.services.forEach(s => {
-        const opt = document.createElement("option");
-        opt.value = s.id;
-        opt.textContent = s.title;
-        serviceSelect.appendChild(opt);
-      });
-    }
+                if (data.slots && Array.isArray(data.slots)) {
+                    // Заполняем список времени
+                    slotSelect.innerHTML = '<option value="">Выберите время</option>';
+                    
+                    // Сортируем слоты по дате
+                    data.slots.sort((a, b) => new Date(a.slot_datetime) - new Date(b.slot_datetime));
+                    
+                    // Группируем слоты по датам
+                    const slotsByDate = {};
+                    data.slots.forEach(slot => {
+                        const date = new Date(slot.slot_datetime);
+                        const dateKey = date.toLocaleDateString('ru-RU');
+                        
+                        if (!slotsByDate[dateKey]) {
+                            slotsByDate[dateKey] = [];
+                        }
+                        slotsByDate[dateKey].push(slot);
+                    });
 
-    if (response.slots) {
-      response.slots.sort((a, b) => new Date(a.slot_datetime) - new Date(b.slot_datetime));
-      response.slots.forEach(s => {
-        const opt = document.createElement("option");
-        opt.value = s.id;
-        opt.textContent = new Date(s.slot_datetime).toLocaleString("ru-RU");
-        slotSelect.appendChild(opt);
-      });
-    }
-  });
+                    // Создаем optgroup для каждой даты
+                    Object.keys(slotsByDate).sort().forEach(date => {
+                        const optgroup = document.createElement('optgroup');
+                        optgroup.label = date;
+                        
+                        slotsByDate[date].forEach(slot => {
+                            const option = document.createElement('option');
+                            option.value = slot.id;
+                            const time = new Date(slot.slot_datetime).toLocaleTimeString('ru-RU', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                            option.textContent = time;
+                            optgroup.appendChild(option);
+                        });
+                        
+                        slotSelect.appendChild(optgroup);
+                    });
+                }
 
-  // 📌 Отправка бронирования
-  document.getElementById("submit").addEventListener("click", () => {
-    if (!serviceSelect.value || !slotSelect.value) {
-      tg.showAlert("Выберите услугу и слот!");
-      return;
-    }
+                // Активируем кнопку отправки
+                submitButton.disabled = false;
+                showStatus('✅ Данные загружены', 'success');
+                
+                // Через 2 секунды скрываем статус
+                setTimeout(() => {
+                    showStatus('');
+                }, 2000);
 
-    const comment = document.getElementById("comment").value.trim();
-    const data = {
-      action: "book",
-      service_id: parseInt(serviceSelect.value),
-      slot_id: parseInt(slotSelect.value),
-      comment: comment
-    };
+            } catch (error) {
+                console.error('Error parsing data:', error);
+                showError('Ошибка при обработке данных');
+            }
+        });
 
-    tg.sendData(JSON.stringify(data));
-    statusDiv.textContent = '⏳ Отправляем данные...';
-  });
-</script>
+        // Обработка ошибок
+        tg.onEvent('webAppRequestedViewportChanged', (event) => {
+            console.log('Viewport changed:', event);
+        });
+
+        tg.onEvent('webAppSetupFailed', (event) => {
+            showError('Ошибка инициализации WebApp');
+        });
+
+        // Проверка заполнения формы
+        function validateForm() {
+            return serviceSelect.value && slotSelect.value;
+        }
+
+        // Обновление состояния кнопки отправки
+        function updateSubmitButton() {
+            submitButton.disabled = !validateForm();
+        }
+
+        // Обработчики изменений
+        serviceSelect.addEventListener('change', updateSubmitButton);
+        slotSelect.addEventListener('change', updateSubmitButton);
+
+        // Отправка формы
+        submitButton.addEventListener('click', () => {
+            if (!validateForm()) {
+                showError('Пожалуйста, выберите услугу и время');
+                return;
+            }
+
+            const bookingData = {
+                action: "book",
+                service_id: parseInt(serviceSelect.value),
+                slot_id: parseInt(slotSelect.value),
+                comment: commentTextarea.value.trim()
+            };
+
+            showStatus('⏳ Отправка данных...', 'loading');
+            submitButton.disabled = true;
+
+            // Отправляем данные бронирования
+            tg.sendData(JSON.stringify(bookingData));
+            
+            // Закрываем WebApp через 2 секунды (бот обработает данные и ответит пользователю)
+            setTimeout(() => {
+                tg.close();
+            }, 2000);
+        });
+
+        // Начинаем загрузку данных при открытии
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+        });
+
+        // Обработка закрытия WebApp
+        tg.onEvent('viewportChanged', (event) => {
+            console.log('Viewport changed:', event);
+        });
+    </script>
 </body>
 </html>
