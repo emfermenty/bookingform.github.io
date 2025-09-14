@@ -44,8 +44,8 @@
   async function loadData() {
     try {
       const [servicesRes, slotsRes] = await Promise.all([
-        fetch("http://46.149.66.175:8000/api/services"),
-        fetch("http://46.149.66.175:8000/api/slots")
+        fetch("https://46.149.66.175:8000/api/services"),
+        fetch("https://46.149.66.175:8000/api/slots")
       ]);
 
       const services = await servicesRes.json();
