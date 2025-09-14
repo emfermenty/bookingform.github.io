@@ -41,59 +41,55 @@
   const slotSelect = document.getElementById("slot");
   const statusDiv = document.getElementById("status");
 
-  async function loadData() {
+  // ⚡ Запрос данных у бота
+  tg.sendData(JSON.stringify({ action: "get_data" }));
+
+  // 📌 Получаем ответ от бота через событие
+  tg.onEvent("web_app_data", (event) => {
     try {
-      const [servicesRes, slotsRes] = await Promise.all([
-        fetch("https://46.149.66.175:8000/api/services"),
-        fetch("https://46.149.66.175:8000/api/slots")
-      ]);
+      const response = JSON.parse(event.data);
 
-      const services = await servicesRes.json();
-      let slots = await slotsRes.json();
+      if (response.services) {
+        response.services.forEach(s => {
+          const opt = document.createElement("option");
+          opt.value = s.id;
+          opt.textContent = s.title;
+          serviceSelect.appendChild(opt);
+        });
+      }
 
-      // --- Сортировка слотов по дате ---
-      slots.sort((a, b) => new Date(a.slot_datetime) - new Date(b.slot_datetime));
-
-      // Заполняем select услугами
-      services.forEach(s => {
-        const opt = document.createElement("option");
-        opt.value = s.id;
-        opt.textContent = s.title;
-        serviceSelect.appendChild(opt);
-      });
-
-      // Заполняем select слотами
-      slots.forEach(s => {
-        const opt = document.createElement("option");
-        opt.value = s.id;
-        opt.textContent = new Date(s.slot_datetime).toLocaleString("ru-RU");
-        slotSelect.appendChild(opt);
-      });
-
-    } catch (err) {
-      console.error("Ошибка при загрузке данных:", err);
-      statusDiv.textContent = "Ошибка загрузки данных с сервера.";
+      if (response.slots) {
+        response.slots.sort((a, b) => new Date(a.slot_datetime) - new Date(b.slot_datetime));
+        response.slots.forEach(s => {
+          const opt = document.createElement("option");
+          opt.value = s.id;
+          opt.textContent = new Date(s.slot_datetime).toLocaleString("ru-RU");
+          slotSelect.appendChild(opt);
+        });
+      }
+    } catch (e) {
+      console.error("Ошибка обработки данных:", e);
     }
-  }
+  });
 
-  loadData();
-
-  document.getElementById("submit").addEventListener("click", async () => {
-    const comment = document.getElementById("comment").value.trim();
-
+  // 📌 Отправка бронирования
+  document.getElementById("submit").addEventListener("click", () => {
     if (!serviceSelect.value || !slotSelect.value) {
       tg.showAlert("Выберите услугу и слот!");
       return;
     }
 
+    const comment = document.getElementById("comment").value.trim();
     const data = {
+      action: "book",
       service_id: parseInt(serviceSelect.value),
-      slot_datetime: slotSelect.options[slotSelect.selectedIndex].text,
+      slot_id: parseInt(slotSelect.value),
       comment: comment
     };
 
     tg.sendData(JSON.stringify(data));
-    statusDiv.textContent = 'Данные отправлены! Закрытие...';
-    setTimeout(() => tg.close(), 1000);
+    statusDiv.textContent = '⏳ Отправляем данные...';
   });
 </script>
+</body>
+</html>
