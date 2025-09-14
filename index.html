@@ -44,12 +44,13 @@
   // ⚡ Запрос данных у бота
   tg.sendData(JSON.stringify({ action: "get_data" }));
 
-  // 📌 Получаем ответ от бота через событие
+  // 📌 Получаем ответ от бота
   tg.onEvent("web_app_data", (event) => {
     try {
       const response = JSON.parse(event.data);
 
       if (response.services) {
+        serviceSelect.innerHTML = "";
         response.services.forEach(s => {
           const opt = document.createElement("option");
           opt.value = s.id;
@@ -59,6 +60,7 @@
       }
 
       if (response.slots) {
+        slotSelect.innerHTML = "";
         response.slots.sort((a, b) => new Date(a.slot_datetime) - new Date(b.slot_datetime));
         response.slots.forEach(s => {
           const opt = document.createElement("option");
