@@ -65,8 +65,8 @@
       // Заполняем select слотами
       slots.forEach(s => {
         const opt = document.createElement("option");
-        opt.value = s.id;
-        opt.textContent = new Date(s.slot_datetime).toLocaleString("ru-RU");
+        opt.value = s.id; // сохраняем id для отправки
+        opt.textContent = new Date(s.slot_datetime).toLocaleString("ru-RU"); // отображаем дату
         slotSelect.appendChild(opt);
       });
 
@@ -88,12 +88,16 @@
 
     const data = {
       service_id: parseInt(serviceSelect.value),
-      slot_id: parseInt(slotSelect.value),  // передаём id слота
+      slot_id: parseInt(slotSelect.value), // теперь отправляем slot_id
       comment: comment
     };
 
+    console.log("Отправляем в бот:", data); // отладка
     tg.sendData(JSON.stringify(data));
+
     statusDiv.textContent = 'Данные отправлены! Закрытие...';
     setTimeout(() => tg.close(), 1000);
   });
 </script>
+</body>
+</html>
