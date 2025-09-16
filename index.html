@@ -87,12 +87,13 @@
     }
 
     const data = {
+      action: "book", // <--- обязательно указываем действие
       service_id: parseInt(serviceSelect.value),
-      slot_id: parseInt(slotSelect.value), // теперь отправляем slot_id
+      slot_id: parseInt(slotSelect.value), // передаём id слота
       comment: comment
     };
 
-    console.log("Отправляем в бот:", data); // отладка
+    console.log("Отправляем в бот:", data); // для отладки
     tg.sendData(JSON.stringify(data));
 
     statusDiv.textContent = 'Данные отправлены! Закрытие...';
