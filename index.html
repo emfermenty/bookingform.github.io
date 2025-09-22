@@ -6,24 +6,16 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: sans-serif; background: #f7f9fc; padding: 15px; margin:0; }
+    body { font-family: sans-serif; background: #f7f9fc; padding: 15px; }
     .card { background: #fff; border-radius: 16px; padding: 20px; max-width: 480px; margin: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.08);}
     label { display: block; margin: 15px 0 5px; }
     select, textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ccc; box-sizing: border-box; }
     textarea { resize: vertical; }
     button { width: 100%; background: #4a90e2; color: #fff; border: none; padding: 14px; border-radius: 12px; margin-top: 20px; font-size: 16px; cursor: pointer;}
-    button:hover { background: #357ab7; }
+    button:disabled { background: #aaa; cursor: not-allowed; }
+    button:hover:enabled { background: #357ab7; }
     #status { margin-top: 15px; text-align: center; font-size: 14px; color: #e74c3c;}
-    .bottom-nav {
-      position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: #fff;
-      border-top: 1px solid #ddd; display: flex; justify-content: space-around; align-items: center;
-      font-size: 12px; z-index: 100;
-    }
-    .bottom-nav a { text-decoration: none; color: #444; display: flex; flex-direction: column; align-items: center; font-size: 12px; }
-    .bottom-nav a.active { color: #4a90e2; font-weight: bold; }
-    .bottom-nav i { font-size: 20px; margin-bottom: 4px; }
   </style>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
   <div class="card">
@@ -38,29 +30,21 @@
     <label>Комментарий к записи (по желанию):</label>
     <textarea id="comment" rows="3" placeholder="Напишите комментарий..."></textarea>
 
-    <button id="submit">Записаться</button>
+    <button id="submit" disabled>Записаться</button>
     <div id="status">Загрузка...</div>
-  </div>
-
-  <div class="bottom-nav">
-    <a href="index.html" class="active"><i class="fas fa-th-large"></i><span>Записаться</span></a>
-    <a href="anamnez.html"><i class="fas fa-search"></i><span>Анамнез</span></a>
-    <a href="booking.html"><i class="fas fa-shopping-cart"></i><span>Записи</span></a>
-    <a href="favorites.html"><i class="fas fa-heart"></i><span>Избранное</span></a>
-    <a href="profile.html"><i class="fas fa-user"></i><span>Профиль</span></a>
   </div>
 
 <script>
   const tg = window.Telegram.WebApp;
   tg.expand();
-  tg.ready(); // ← вызываем правильно
+  tg.ready();
 
   const serviceSelect = document.getElementById("service");
   const slotSelect = document.getElementById("slot");
   const submitBtn = document.getElementById("submit");
   const statusDiv = document.getElementById("status");
 
-  // Ждём пока появится user.id
+  // ждём user.id
   function waitForUser() {
     return new Promise(resolve => {
       const check = () => {
@@ -71,25 +55,39 @@
     });
   }
 
-  // Загружаем процедуры и слоты
+  async function checkAnamnez(telegramId) {
+    try {
+      const res = await fetch(`https://antohabeuty.store/api/anamnez/${telegramId}`);
+      const data = await res.json();
+
+      if (data.anamnesis === true || data.anamnesis === "true") {
+        submitBtn.disabled = false;
+        statusDiv.textContent = "";
+      } else {
+        submitBtn.disabled = true;
+        statusDiv.textContent = "⚠️ Перед записью заполните анкету (Анамнез)";
+      }
+    } catch (err) {
+      console.error("Ошибка проверки анамнеза:", err);
+      statusDiv.textContent = "Ошибка проверки анкеты.";
+    }
+  }
+
   async function loadData() {
     try {
-      statusDiv.textContent = "Загрузка данных...";
       const [servicesRes, slotsRes] = await Promise.all([
         fetch("https://antohabeuty.store/api/services"),
         fetch("https://antohabeuty.store/api/slots")
       ]);
 
-      if (!servicesRes.ok || !slotsRes.ok) {
-        throw new Error(`Ошибка ответа API: ${servicesRes.status} / ${slotsRes.status}`);
-      }
-
       const services = await servicesRes.json();
-      const slots = await slotsRes.json();
+      let slots = await slotsRes.json();
 
+      // сортируем слоты по дате
+      slots.sort((a, b) => new Date(a.slot_datetime) - new Date(b.slot_datetime));
+
+      // услуги
       serviceSelect.innerHTML = '<option value="">Выберите...</option>';
-      slotSelect.innerHTML = '<option value="">Выберите...</option>';
-
       services.forEach(s => {
         const opt = document.createElement("option");
         opt.value = s.id;
@@ -97,7 +95,8 @@
         serviceSelect.appendChild(opt);
       });
 
-      slots.sort((a, b) => new Date(a.slot_datetime) - new Date(b.slot_datetime));
+      // слоты
+      slotSelect.innerHTML = '<option value="">Выберите...</option>';
       slots.forEach(s => {
         const opt = document.createElement("option");
         opt.value = s.id;
@@ -105,55 +104,41 @@
         slotSelect.appendChild(opt);
       });
 
-      statusDiv.textContent = ""; // очищаем статус
     } catch (err) {
-      console.error(err);
-      statusDiv.textContent = "❌ Ошибка загрузки: " + err.message;
+      console.error("Ошибка загрузки:", err);
+      statusDiv.textContent = "Ошибка загрузки данных с сервера.";
     }
   }
 
-  // сразу загружаем
-  loadData();
+  // запуск
+  (async () => {
+    await loadData();
+    const user = await waitForUser();
+    await checkAnamnez(user.id);
+  })();
 
-  // обработка кнопки "Записаться"
+  // обработка клика
   submitBtn.addEventListener("click", async () => {
-    try {
-      const user = await waitForUser();
-      const telegramId = user.id;
+    const comment = document.getElementById("comment").value.trim();
 
-      // Проверяем анамнез
-      const res = await fetch(`https://antohabeuty.store/api/anamnez/${telegramId}`);
-      const anamnez = await res.json();
-
-      if (!(anamnez.anamnesis === true || anamnez.anamnesis === "true")) {
-        tg.showAlert("⚠️ Вы не можете записаться, пока не заполнили анамнез!");
-        return;
-      }
-
-      if (!serviceSelect.value || !slotSelect.value) {
-        tg.showAlert("Выберите услугу и слот!");
-        return;
-      }
-
-      const comment = document.getElementById("comment").value.trim();
-      const data = {
-        action: "book",
-        service_id: parseInt(serviceSelect.value),
-        slot_id: parseInt(slotSelect.value),
-        comment
-      };
-
-      console.log("Отправляем в бот:", data);
-      tg.sendData(JSON.stringify(data));
-
-      statusDiv.style.color = "#4caf50";
-      statusDiv.textContent = '✅ Данные отправлены! Закрытие...';
-      setTimeout(() => tg.close(), 1000);
-
-    } catch (err) {
-      console.error(err);
-      statusDiv.textContent = "Ошибка при попытке записи.";
+    if (!serviceSelect.value || !slotSelect.value) {
+      tg.showAlert("Выберите услугу и слот!");
+      return;
     }
+
+    const data = {
+      action: "book",
+      service_id: parseInt(serviceSelect.value),
+      slot_id: parseInt(slotSelect.value),
+      comment
+    };
+
+    console.log("Отправляем в бот:", data);
+    tg.sendData(JSON.stringify(data));
+
+    statusDiv.style.color = "#4caf50";
+    statusDiv.textContent = "✅ Данные отправлены! Закрытие...";
+    setTimeout(() => tg.close(), 1000);
   });
 </script>
 </body>
