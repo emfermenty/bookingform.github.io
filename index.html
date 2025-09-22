@@ -1,181 +1,166 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Beauty WebApp</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { font-family: sans-serif; background: #f7f9fc; margin:0; padding-bottom:70px; }
-    .page { display: none; padding: 15px; }
-    .page.active { display: block; }
-    .card { background: #fff; border-radius: 16px; padding: 20px; max-width: 480px; margin: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
-
-    label { display: block; margin: 15px 0 5px; }
-    select, textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ccc; box-sizing: border-box; }
-    textarea { resize: vertical; }
-    button { width: 100%; background: #4a90e2; color: #fff; border: none; padding: 14px; border-radius: 12px; margin-top: 20px; font-size: 16px; cursor: pointer;}
-    button:disabled { background: #ccc; cursor: not-allowed; }
-    button:hover:enabled { background: #357ab7; }
-    #status { margin-top: 15px; text-align: center; font-size: 14px; color: #e74c3c;}
-
-    .bottom-nav {
-      position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: #fff;
-      border-top: 1px solid #ddd; display: flex; justify-content: space-around; align-items: center;
-      font-size: 12px; z-index: 100;
-    }
-    .bottom-nav a { text-decoration: none; color: #444; display: flex; flex-direction: column; align-items: center; font-size: 12px; cursor: pointer; }
-    .bottom-nav a.active { color: #4a90e2; font-weight: bold; }
-    .bottom-nav i { font-size: 20px; margin-bottom: 4px; }
-  </style>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<meta charset="UTF-8">
+<title>Запись на услугу</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body { font-family: sans-serif; background: #f7f9fc; margin:0; padding-bottom:70px; }
+.page { display: none; padding: 15px; }
+.page.active { display: block; }
+.card { background: #fff; border-radius: 16px; padding: 20px; max-width: 480px; margin: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+label { display: block; margin: 15px 0 5px; }
+select, textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ccc; box-sizing: border-box; }
+textarea { resize: vertical; }
+button { width: 100%; background: #4a90e2; color: #fff; border: none; padding: 14px; border-radius: 12px; margin-top: 20px; font-size: 16px; cursor: pointer;}
+button:disabled { background: #ccc; cursor: not-allowed; }
+button:hover:enabled { background: #357ab7; }
+#status { margin-top: 15px; text-align: center; font-size: 14px; color: #e74c3c;}
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: #fff; border-top: 1px solid #ddd; display: flex; justify-content: space-around; align-items: center; font-size: 12px; z-index: 100; }
+.bottom-nav a { text-decoration: none; color: #444; display: flex; flex-direction: column; align-items: center; font-size: 12px; cursor: pointer; }
+.bottom-nav a.active { color: #4a90e2; font-weight: bold; }
+.bottom-nav i { font-size: 20px; margin-bottom: 4px; }
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
-  <!-- Страница записи -->
-  <div id="page-book" class="page active">
-    <div class="card">
-      <h2>📌 Запись на услугу</h2>
 
-      <label>Выберите процедуру:</label>
-      <select id="service"></select>
-
-      <label>Выберите время:</label>
-      <select id="slot"></select>
-
-      <label>Комментарий:</label>
-      <textarea id="comment" rows="3" placeholder="Напишите комментарий..."></textarea>
-
-      <button id="submit" disabled>Записаться</button>
-      <div id="status">Загрузка...</div>
-    </div>
+<div id="page-book" class="page active">
+  <div class="card">
+    <h2>📌 Запись на услугу</h2>
+    <label>Выберите процедуру:</label>
+    <select id="service"></select>
+    <label>Выберите время:</label>
+    <select id="slot"></select>
+    <label>Комментарий:</label>
+    <textarea id="comment" rows="3" placeholder="Напишите комментарий..."></textarea>
+    <button id="submit" disabled>Записаться</button>
+    <div id="status">Загрузка...</div>
   </div>
+</div>
 
-  <!-- Страница анамнеза -->
-  <div id="page-anamnez" class="page">
-    <div class="card">
-      <h2>📝 Анамнез</h2>
-      <iframe src="https://emfermenty.github.io/registerform.github.io/" style="width:100%;height:500px;border:none;border-radius:12px;"></iframe>
-    </div>
+<div id="page-anamnez" class="page">
+  <div class="card">
+    <h2>📝 Анамнез</h2>
+    <iframe src="https://emfermenty.github.io/registerform.github.io/" style="width:100%;height:500px;border:none;border-radius:12px;"></iframe>
   </div>
+</div>
 
-  <!-- Нижнее меню -->
-  <div class="bottom-nav">
-    <a data-page="page-book" class="active"><i class="fas fa-th-large"></i><span>Записаться</span></a>
-    <a data-page="page-anamnez"><i class="fas fa-search"></i><span>Анамнез</span></a>
-  </div>
+<div class="bottom-nav">
+  <a data-page="page-book" class="active"><i class="fas fa-th-large"></i><span>Записаться</span></a>
+  <a data-page="page-anamnez"><i class="fas fa-search"></i><span>Анамнез</span></a>
+</div>
 
 <script>
-  const tg = window.Telegram.WebApp;
-  tg.expand();
+const tg = window.Telegram.WebApp;
+tg.expand();
 
-  const serviceSelect = document.getElementById("service");
-  const slotSelect = document.getElementById("slot");
-  const submitBtn = document.getElementById("submit");
-  const statusDiv = document.getElementById("status");
+const serviceSelect = document.getElementById("service");
+const slotSelect = document.getElementById("slot");
+const submitBtn = document.getElementById("submit");
+const statusDiv = document.getElementById("status");
 
-  function waitForUser() {
-    return new Promise(resolve => {
-      const check = () => {
-        if (tg.initDataUnsafe?.user?.id) resolve(tg.initDataUnsafe.user);
-        else setTimeout(check, 50);
-      };
-      check();
-    });
-  }
-
-  async function checkAnamnez(telegramId) {
-    try {
-      const res = await fetch(`https://antohabeuty.store/api/anamnez/${telegramId}`);
-      if (!res.ok) throw new Error("API error " + res.status);
-      const data = await res.json();
-
-      if (data.anamnesis === true) {
-        submitBtn.disabled = false;
-        statusDiv.textContent = "";
-      } else {
-        submitBtn.disabled = true;
-        statusDiv.textContent = "⚠️ Перед записью заполните анкету (анамнез).";
-      }
-    } catch (err) {
-      console.error(err);
-      submitBtn.disabled = true;
-      statusDiv.textContent = "Ошибка проверки анкеты.";
-    }
-  }
-
-  async function loadData() {
-    try {
-      const [servicesRes, slotsRes] = await Promise.all([
-        fetch("https://antohabeuty.store/api/services"),
-        fetch("https://antohabeuty.store/api/slots")
-      ]);
-
-      const services = await servicesRes.json();
-      const slots = await slotsRes.json();
-
-      serviceSelect.innerHTML = '<option value="">Выберите...</option>';
-      slotSelect.innerHTML = '<option value="">Выберите...</option>';
-
-      services.forEach(s => {
-        const opt = document.createElement("option");
-        opt.value = s.id;
-        opt.textContent = s.title;
-        serviceSelect.appendChild(opt);
-      });
-
-      slots.sort((a, b) => new Date(a.slot_datetime) - new Date(b.slot_datetime));
-      slots.forEach(s => {
-        const opt = document.createElement("option");
-        opt.value = s.id;
-        opt.textContent = new Date(s.slot_datetime).toLocaleString("ru-RU");
-        slotSelect.appendChild(opt);
-      });
-
-      statusDiv.textContent = "";
-    } catch (err) {
-      console.error(err);
-      statusDiv.textContent = "Ошибка загрузки данных.";
-    }
-  }
-
-  (async () => {
-    const user = await waitForUser();
-    await checkAnamnez(user.id);
-    await loadData();
-  })();
-
-  submitBtn.addEventListener("click", async () => {
-    if (submitBtn.disabled) return;
-
-    if (!serviceSelect.value || !slotSelect.value) {
-      tg.showAlert("Выберите услугу и слот!");
-      return;
-    }
-
-    const comment = document.getElementById("comment").value.trim();
-    const data = {
-      action: "book",
-      service_id: parseInt(serviceSelect.value),
-      slot_id: parseInt(slotSelect.value),
-      comment
+function waitForUser() {
+  return new Promise(resolve => {
+    const check = () => {
+      if (tg.initDataUnsafe?.user?.id) resolve(tg.initDataUnsafe.user);
+      else setTimeout(check, 50);
     };
-
-    tg.sendData(JSON.stringify(data));
-    statusDiv.style.color = "#4caf50";
-    statusDiv.textContent = "✅ Данные отправлены! Закрытие...";
-    setTimeout(() => tg.close(), 1000);
+    check();
   });
+}
 
-  // Переключение вкладок
-  document.querySelectorAll(".bottom-nav a").forEach(link => {
-    link.addEventListener("click", () => {
-      document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-      document.getElementById(link.dataset.page).classList.add("active");
+async function loadData() {
+  try {
+    statusDiv.textContent = "Загрузка данных...";
+    const [servicesRes, slotsRes] = await Promise.all([
+      fetch("https://antohabeuty.store/api/services"),
+      fetch("https://antohabeuty.store/api/slots")
+    ]);
 
-      document.querySelectorAll(".bottom-nav a").forEach(a => a.classList.remove("active"));
-      link.classList.add("active");
+    if (!servicesRes.ok || !slotsRes.ok) throw new Error("Ошибка ответа API");
+
+    const services = await servicesRes.json();
+    const slots = await slotsRes.json();
+
+    serviceSelect.innerHTML = '<option value="">Выберите...</option>';
+    slotSelect.innerHTML = '<option value="">Выберите...</option>';
+
+    services.forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = s.id;
+      opt.textContent = s.title;
+      serviceSelect.appendChild(opt);
     });
+
+    slots.sort((a,b)=>new Date(a.slot_datetime)-new Date(b.slot_datetime));
+    slots.forEach(s=>{
+      const opt = document.createElement("option");
+      opt.value = s.id;
+      opt.textContent = new Date(s.slot_datetime).toLocaleString("ru-RU");
+      slotSelect.appendChild(opt);
+    });
+
+    statusDiv.textContent = "";
+  } catch(err) {
+    console.error(err);
+    statusDiv.textContent = "Ошибка загрузки данных.";
+  }
+}
+
+async function checkAnamnez(telegramId) {
+  try {
+    const res = await fetch(`https://antohabeuty.store/api/anamnez/${telegramId}`);
+    const data = await res.json();
+    if (data.anamnesis === true) {
+      submitBtn.disabled = false;
+      statusDiv.textContent = "";
+    } else {
+      submitBtn.disabled = true;
+      statusDiv.textContent = "⚠️ Перед записью заполните анкету (анамнез).";
+    }
+  } catch(err) {
+    console.error(err);
+    submitBtn.disabled = true;
+    statusDiv.textContent = "Ошибка проверки анкеты.";
+  }
+}
+
+(async ()=>{
+  const user = await waitForUser();
+  await loadData();           // сначала слоты и услуги
+  await checkAnamnez(user.id); // потом проверка анамнеза
+})();
+
+submitBtn.addEventListener("click", async ()=>{
+  if (submitBtn.disabled) return;
+  if (!serviceSelect.value || !slotSelect.value){
+    tg.showAlert("Выберите услугу и слот!");
+    return;
+  }
+  const comment = document.getElementById("comment").value.trim();
+  const data = {
+    action: "book",
+    service_id: parseInt(serviceSelect.value),
+    slot_id: parseInt(slotSelect.value),
+    comment
+  };
+  tg.sendData(JSON.stringify(data));
+  statusDiv.style.color="#4caf50";
+  statusDiv.textContent="✅ Данные отправлены! Закрытие...";
+  setTimeout(()=>tg.close(),1000);
+});
+
+// Навигация
+document.querySelectorAll(".bottom-nav a").forEach(link=>{
+  link.addEventListener("click", ()=>{
+    document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+    document.getElementById(link.dataset.page).classList.add("active");
+    document.querySelectorAll(".bottom-nav a").forEach(a=>a.classList.remove("active"));
+    link.classList.add("active");
   });
+});
 </script>
 </body>
 </html>
