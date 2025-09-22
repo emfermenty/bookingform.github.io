@@ -6,15 +6,14 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: sans-serif; background: #f7f9fc; padding: 15px; margin:0; }
+    body { font-family: sans-serif; background: #f7f9fc; padding: 20px; }
     .card { background: #fff; border-radius: 16px; padding: 20px; max-width: 480px; margin: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.08);}
     label { display: block; margin: 15px 0 5px; }
     select, textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ccc; box-sizing: border-box; }
     textarea { resize: vertical; }
     button { width: 100%; background: #4a90e2; color: #fff; border: none; padding: 14px; border-radius: 12px; margin-top: 20px; font-size: 16px; cursor: pointer;}
     button:disabled { background: #aaa; cursor: not-allowed; }
-    button:hover:enabled { background: #357ab7; }
-    #status { margin-top: 15px; text-align: center; font-size: 14px; }
+    #status { margin-top: 15px; text-align: center; font-size: 14px; color: #e74c3c;}
   </style>
 </head>
 <body>
@@ -35,152 +34,126 @@
   </div>
 
 <script>
-const tg = window.Telegram?.WebApp;
+  const tg = window.Telegram?.WebApp;
+  if (tg) { tg.expand(); tg.ready(); }
 
-// Расширяем и готовим WebApp
-if(tg){
-  try { tg.expand(); tg.ready(); } catch(e) {}
-}
+  const serviceSelect = document.getElementById("service");
+  const slotSelect = document.getElementById("slot");
+  const submitBtn = document.getElementById("submit");
+  const statusDiv = document.getElementById("status");
 
-const serviceSelect = document.getElementById("service");
-const slotSelect = document.getElementById("slot");
-const submitBtn = document.getElementById("submit");
-const statusDiv = document.getElementById("status");
+  // --- Получаем Telegram ID пользователя ---
+  function getTelegramId(timeout = 3000) {
+    return new Promise(resolve => {
+      if (tg?.initDataUnsafe?.user?.id) return resolve(tg.initDataUnsafe.user.id);
 
-// Получение Telegram ID
-async function getTelegramUserId(timeout = 3000) {
-  if(!tg) return null;
-
-  if(tg.initDataUnsafe?.user?.id) return tg.initDataUnsafe.user.id;
-
-  return new Promise(resolve => {
-    let elapsed = 0;
-    const interval = 50;
-    const iv = setInterval(() => {
-      if(tg.initDataUnsafe?.user?.id) {
-        clearInterval(iv);
-        resolve(tg.initDataUnsafe.user.id);
-      }
-      elapsed += interval;
-      if(elapsed >= timeout){
-        clearInterval(iv);
-        resolve(null);
-      }
-    }, interval);
-  });
-}
-
-// Загрузка услуг и слотов
-async function loadData() {
-  statusDiv.textContent = "Загрузка услуг и слотов...";
-  try {
-    const [servicesRes, slotsRes] = await Promise.all([
-      fetch("https://antohabeuty.store/api/services"),
-      fetch("https://antohabeuty.store/api/slots")
-    ]);
-
-    if(!servicesRes.ok || !slotsRes.ok) throw new Error("Ошибка API");
-
-    const services = await servicesRes.json();
-    const slots = await slotsRes.json();
-
-    serviceSelect.innerHTML = '<option value="">Выберите услугу...</option>';
-    slotSelect.innerHTML = '<option value="">Выберите время...</option>';
-
-    services.forEach(s=>{
-      const opt = document.createElement("option");
-      opt.value = s.id;
-      opt.textContent = s.title || s.name || `#${s.id}`;
-      serviceSelect.appendChild(opt);
+      let elapsed = 0;
+      const interval = 50;
+      const iv = setInterval(() => {
+        if (tg?.initDataUnsafe?.user?.id) {
+          clearInterval(iv);
+          resolve(tg.initDataUnsafe.user.id);
+        }
+        elapsed += interval;
+        if (elapsed >= timeout) { clearInterval(iv); resolve(null); }
+      }, interval);
     });
-
-    slots.sort((a,b)=>new Date(a.slot_datetime)-new Date(b.slot_datetime));
-    slots.forEach(s=>{
-      const opt = document.createElement("option");
-      opt.value = s.id;
-      opt.textContent = new Date(s.slot_datetime).toLocaleString("ru-RU");
-      slotSelect.appendChild(opt);
-    });
-
-    statusDiv.textContent = "Данные загружены. Проверяю анкету...";
-  } catch(err){
-    console.error(err);
-    statusDiv.textContent = "Ошибка загрузки данных: " + err.message;
-  }
-}
-
-// Проверка анамнеза
-async function checkAnamnez(telegramId){
-  if(!telegramId){
-    statusDiv.textContent = "⚠️ Не удалось определить пользователя";
-    submitBtn.disabled = true;
-    return false;
   }
 
-  statusDiv.textContent = "Проверка анкеты...";
-  try {
-    const res = await fetch(`https://antohabeuty.store/api/anamnez/${telegramId}`);
-    if(!res.ok) throw new Error("Ошибка запроса анамнеза");
-    const data = await res.json();
-
-    if(data?.anamnesis === true){
-      submitBtn.disabled = false;
-      statusDiv.textContent = "Анкета заполнена. Можете записаться.";
-      return true;
-    } else {
-      submitBtn.disabled = true;
-      statusDiv.textContent = "⚠️ Перед записью заполните анкету (анамнез).";
-      return false;
-    }
-  } catch(err){
-    console.error(err);
-    submitBtn.disabled = true;
-    statusDiv.textContent = "Ошибка проверки анкеты: " + err.message;
-    return false;
-  }
-}
-
-// Отправка данных в бот
-submitBtn.addEventListener("click", async ()=>{
-  if(submitBtn.disabled) {
-    if(tg?.showAlert) tg.showAlert("Сначала заполните анкету!");
-    else alert("Сначала заполните анкету!");
-    return;
-  }
-
-  if(!serviceSelect.value || !slotSelect.value){
-    if(tg?.showAlert) tg.showAlert("Выберите услугу и время!");
-    else alert("Выберите услугу и время!");
-    return;
-  }
-
-  const data = {
-    action: "book",
-    service_id: parseInt(serviceSelect.value),
-    slot_id: parseInt(slotSelect.value),
-    comment: document.getElementById("comment").value.trim()
-  };
-
-  if(tg?.sendData){
+  // --- Загружаем процедуры и слоты ---
+  async function loadData() {
+    statusDiv.textContent = "Загрузка услуг и слотов...";
     try {
-      tg.sendData(JSON.stringify(data));
-      statusDiv.textContent = "✅ Данные отправлены в бота. Закрытие...";
-      setTimeout(()=>tg.close(), 800);
-    } catch(err){
-      console.error(err);
-      statusDiv.textContent = "Ошибка отправки: " + err.message;
-    }
-  } else {
-    alert("Debug: данные для отправки:\n" + JSON.stringify(data, null,2));
-  }
-});
+      const [servicesRes, slotsRes] = await Promise.all([
+        fetch("https://antohabeuty.store/api/services"),
+        fetch("https://antohabeuty.store/api/slots")
+      ]);
 
-// Основной запуск
-(async ()=>{
-  await loadData();
-  const telegramId = await getTelegramUserId();
-  await checkAnamnez(telegramId);
-})();
+      if (!servicesRes.ok || !slotsRes.ok) throw new Error("Ошибка загрузки данных");
+
+      const services = await servicesRes.json();
+      const slots = await slotsRes.json();
+
+      serviceSelect.innerHTML = '<option value="">Выберите...</option>';
+      slotSelect.innerHTML = '<option value="">Выберите...</option>';
+
+      services.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.id;
+        opt.textContent = s.title || `#${s.id}`;
+        serviceSelect.appendChild(opt);
+      });
+
+      slots.sort((a,b) => new Date(a.slot_datetime) - new Date(b.slot_datetime));
+      slots.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.id;
+        opt.textContent = new Date(s.slot_datetime).toLocaleString("ru-RU");
+        slotSelect.appendChild(opt);
+      });
+
+      statusDiv.textContent = "Данные загружены.";
+    } catch (err) {
+      console.error(err);
+      statusDiv.textContent = "Ошибка загрузки данных.";
+    }
+  }
+
+  // --- Проверка анамнеза ---
+  async function checkAnamnez(telegramId) {
+    if (!telegramId) {
+      statusDiv.textContent = "⚠️ Не удалось определить пользователя";
+      submitBtn.disabled = true;
+      return;
+    }
+
+    statusDiv.textContent = "Проверка анкеты...";
+    try {
+      const res = await fetch(`https://antohabeuty.store/api/anamnez/${telegramId}`);
+      if (!res.ok) throw new Error("Ошибка проверки анкеты");
+      const data = await res.json();
+
+      if (data?.anamnesis === true) {
+        submitBtn.disabled = false;
+        statusDiv.textContent = "Анкета заполнена. Можете записаться.";
+      } else {
+        submitBtn.disabled = true;
+        statusDiv.textContent = "⚠️ Перед записью заполните анкету (анамнез).";
+      }
+    } catch (err) {
+      console.error(err);
+      submitBtn.disabled = true;
+      statusDiv.textContent = "Ошибка при проверке анкеты";
+    }
+  }
+
+  // --- Отправка записи ---
+  submitBtn.addEventListener("click", async () => {
+    if (submitBtn.disabled) return tg?.showAlert?.("Сначала заполните анкету");
+
+    if (!serviceSelect.value || !slotSelect.value) {
+      return tg?.showAlert?.("Выберите услугу и время");
+    }
+
+    const data = {
+      action: "book",
+      service_id: parseInt(serviceSelect.value),
+      slot_id: parseInt(slotSelect.value),
+      comment: document.getElementById("comment").value.trim()
+    };
+
+    tg?.sendData(JSON.stringify(data));
+    statusDiv.style.color = "#4caf50";
+    statusDiv.textContent = "✅ Данные отправлены!";
+    setTimeout(() => tg?.close(), 800);
+  });
+
+  // --- Инициализация страницы ---
+  (async () => {
+    await loadData();
+    const telegramId = await getTelegramId();
+    await checkAnamnez(telegramId);
+  })();
 </script>
 </body>
 </html>
