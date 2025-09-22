@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Анкета (Сбор анамнеза)</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #f7f7f7; }
+    input, textarea, select { width: 100%; margin-bottom: 12px; padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
+    button { padding: 12px; width: 100%; background: #4CAF50; color: white; border: none; border-radius: 8px; font-size: 16px; }
+    h3 { margin-bottom: 15px; }
+  </style>
+</head>
+<body>
+  <h3>Заполните анкету (Сбор анамнеза)</h3>
+
+  <label>ФИО:</label>
+  <input type="text" id="username" placeholder="Иванов Иван Иванович" required>
+
+  <label>Дата рождения:</label>
+  <input type="date" id="birthday" required>
+
+  <label>Хронические заболевания:</label>
+  <textarea id="chronic" placeholder="Нет / перечислите заболевания"></textarea>
+
+  <label>Пользовались услугами раньше?</label>
+  <select id="makeusebefore">
+    <option value="true">Да</option>
+    <option value="false">Нет</option>
+  </select>
+
+  <label>Какие процедуры делали раньше?</label>
+  <input type="text" id="procedure">
+
+  <label>Какие средства использовали?</label>
+  <input type="text" id="means">
+
+  <label>Сфера деятельности:</label>
+  <input type="text" id="viewjob" placeholder="Например, программист">
+
+  <label>Желаемый результат:</label>
+  <input type="text" id="result" placeholder="Что хотите получить от процедуры">
+
+  <label>Жалобы:</label>
+  <textarea id="complaints" placeholder="Опишите ваши жалобы"></textarea>
+
+  <button onclick="sendData()">Отправить</button>
+
+  <script>
+    function sendData() {
+      const tg = window.Telegram.WebApp;
+      const data = {
+        action: "register",
+        username: document.getElementById("username").value,
+        birthday: document.getElementById("birthday").value,
+        chronic_diseases: document.getElementById("chronic").value,
+        makeusebefore: document.getElementById("makeusebefore").value === "true",
+        makeprocedurebefore: document.getElementById("procedure").value,
+        makemeansbefore: document.getElementById("means").value,
+        viewjob: document.getElementById("viewjob").value,
+        result: document.getElementById("result").value,
+        complaints: document.getElementById("complaints").value
+      };
+      tg.sendData(JSON.stringify(data));
+      tg.close();
+    }
+  </script>
+</body>
+</html>
