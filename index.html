@@ -116,36 +116,41 @@
 
   // Проверяем анамнез по telegramId
   async function checkAnamnezForId(telegramId) {
-    if (!telegramId) {
-      statusDiv.textContent = 'Не найден telegramId для проверки анкеты.';
-      console.warn('No telegramId available for anamnez check');
-      return false;
-    }
-    statusDiv.textContent = 'Проверка анкеты...';
-    console.log('Checking anamnez for id=', telegramId);
-    try {
-      const res = await fetch(`https://antohabeuty.store/api/anamnez/${telegramId}`);
-      if (!res.ok) throw new Error('status ' + res.status);
-      const data = await res.json();
-      console.log('anamnez response:', data);
-      const ok = (data && (data.anamnesis === true || data.anamnesis === 'true'));
-      if (ok) {
-        submitBtn.disabled = false;
-        statusDiv.textContent = ''; // очистим
-        console.log('Anamnesis == true -> кнопка включена');
-      } else {
-        submitBtn.disabled = true;
-        statusDiv.textContent = '⚠️ Перед записью заполните анкету (анамнез).';
-        console.log('Anamnesis != true -> кнопка оставлена отключённой');
-      }
-      return ok;
-    } catch (err) {
-      console.error('Ошибка запроса anamnez:', err);
-      submitBtn.disabled = true;
-      statusDiv.textContent = 'Ошибка проверки анкеты: ' + err.message;
-      return false;
-    }
+  if (!telegramId) {
+    statusDiv.textContent = 'Не найден telegramId для проверки анкеты.';
+    submitBtn.disabled = true;
+    return false;
   }
+
+  statusDiv.textContent = 'Проверка анкеты...';
+  try {
+    const res = await fetch(`https://antohabeuty.store/api/anamnez/${telegramId}`);
+    if (!res.ok) throw new Error('status ' + res.status);
+    const data = await res.json();
+    console.log('anamnez response:', data);
+
+    // по умолчанию кнопка блокирована
+    submitBtn.disabled = true;
+
+    if (data && data.anamnesis === true) {
+      submitBtn.disabled = false;
+      statusDiv.textContent = '';
+      console.log('Anamnesis == true -> кнопка включена');
+      return true;
+    } else {
+      // если false — показываем предупреждение
+      statusDiv.textContent = '⚠️ Перед записью заполните анкету (анамнез).';
+      console.log('Anamnesis == false -> кнопка заблокирована');
+      return false;
+    }
+  } catch (err) {
+    console.error('Ошибка запроса anamnez:', err);
+    submitBtn.disabled = true;
+    statusDiv.textContent = 'Ошибка проверки анкеты: ' + err.message;
+    return false;
+  }
+}
+
 
   // Обработчик клика привязываем сразу — пусть есть даже когда кнопка disabled
   submitBtn.addEventListener('click', async (e) => {
